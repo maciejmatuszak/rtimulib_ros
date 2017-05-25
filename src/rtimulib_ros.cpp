@@ -69,7 +69,7 @@ int main(int argc, char **argv)
         update_rate = 20;
     }
 
-    ros::Publisher imu_pub = n.advertise<sensor_msgs::Imu>(topic_name.c_str(), 1);
+    ros::Publisher imu_pub = private_n.advertise<sensor_msgs::Imu>(topic_name.c_str(), 1);
 
     // Load the RTIMULib.ini config file
     RTIMUSettings *settings = new RTIMUSettings(calibration_file_path.c_str(), calibration_file_name.c_str()); 
@@ -86,12 +86,13 @@ int main(int argc, char **argv)
     imu->IMUInit();
 
     // Set the Fusion coefficient
-    imu->setSlerpPower(0.02);
+    //imu->setSlerpPower(0.02);
     // Enable the sensors
-    imu->setGyroEnable(true);
-    imu->setAccelEnable(true);
-    imu->setCompassEnable(true);
+    //imu->setGyroEnable(true);
+    //imu->setAccelEnable(true);
+    //imu->setCompassEnable(true);
 
+    uint32_t seq = 0;
     ros::Rate loop_rate(update_rate);
     while (ros::ok())
     {
@@ -100,8 +101,13 @@ int main(int argc, char **argv)
         if (imu->IMURead())
         {
             RTIMU_DATA imu_data = imu->getIMUData();
-            imu_msg.header.stamp = ros::Time::now();
+
+            //convert micto sec to sec
+            double timestamp_sec = imu_data.timestamp / 1000000ull;
+            imu_msg.header.stamp.fromSec(timestamp_sec);
+
             imu_msg.header.frame_id = frame_id;
+            imu_msg.header.seq = seq++;
             imu_msg.orientation.x = imu_data.fusionQPose.x(); 
             imu_msg.orientation.y = imu_data.fusionQPose.y(); 
             imu_msg.orientation.z = imu_data.fusionQPose.z(); 
